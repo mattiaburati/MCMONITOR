@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import Login from './Login'
 import ServerConfig from './ServerConfig'
@@ -30,7 +30,7 @@ function App() {
   const [showApiConfig, setShowApiConfig] = useState(false)
   const [showConsole, setShowConsole] = useState(false)
   const [playersData, setPlayersData] = useState(null)
-  const [consoleRef, setConsoleRef] = useState(null)
+  const consoleRef = useRef(null)
 
   useEffect(() => {
     // Verifica token esistente
@@ -70,8 +70,8 @@ function App() {
           cpu: { ...prev.cpu, usage: data.data.cpu },
           memory: { ...prev.memory, usage: data.data.memory }
         }))
-      } else if (data.type === 'log' && consoleRef && consoleRef.handleNewLog) {
-        consoleRef.handleNewLog(data.data)
+      } else if (data.type === 'log' && consoleRef.current && consoleRef.current.handleNewLog) {
+        consoleRef.current.handleNewLog(data.data)
       }
     }
 
@@ -310,7 +310,7 @@ function App() {
       />
       
       <Console
-        ref={setConsoleRef}
+        ref={consoleRef}
         serverStatus={serverStatus}
         isVisible={showConsole}
         onClose={() => setShowConsole(false)}
