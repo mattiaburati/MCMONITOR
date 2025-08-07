@@ -8,7 +8,7 @@ const { exec } = require('child_process');
 const path = require('path');
 const { authenticateUser, authMiddleware, initializeAuth } = require('./auth');
 const { getConfig, saveConfig, buildJavaCommand, getCurrentPaths } = require('./config');
-const mcping = require('mcping-js');
+const { status } = require('minecraft-server-util');
 
 const app = express();
 const server = http.createServer(app);
@@ -308,7 +308,7 @@ app.get('/api/system', authMiddleware, async (req, res) => {
   }
 });
 
-// Funzione per query server Minecraft usando mcping-js
+// Funzione per query server Minecraft usando minecraft-server-util
 async function queryMinecraftServer() {
   if (serverStatus !== 'running') {
     playerList = [];
@@ -319,27 +319,27 @@ async function queryMinecraftServer() {
   try {
     const paths = getCurrentPaths();
     
-    // Crea il server per il ping
-    const server = new mcping.MinecraftServer(paths.serverHost, parseInt(paths.serverPort));
-    
-    // Ping del server con timeout di 3 secondi
-    const response = await server.ping(3000, 47); // 47 è la protocol version per 1.8+
+    // Query del server con timeout di 5 secondi
+    const response = await status(paths.serverHost, parseInt(paths.serverPort), {
+      timeout: 5000,
+      enableSRV: false
+    });
     
     if (response) {
       serverInfo = {
-        online: response.players.online || 0,
-        max: response.players.max || 20,
-        version: response.version.name || 'Unknown',
-        motd: response.description.text || response.description || 'Minecraft Server'
+        online: response.players?.online || 0,
+        max: response.players?.max || 20,
+        version: response.version?.name || response.version || 'Unknown',
+        motd: response.motd?.clean || response.description?.text || response.description || 'Minecraft Server'
       };
 
       // Lista giocatori (se disponibile nel sample)
-      if (response.players.sample && response.players.sample.length > 0) {
+      if (response.players?.sample && response.players.sample.length > 0) {
         playerList = response.players.sample.map(player => ({
           name: player.name,
-          uuid: player.id || `unknown-${Math.random().toString(36).substr(2, 9)}`
+          uuid: player.id || player.uuid || `unknown-${Math.random().toString(36).substr(2, 9)}`
         }));
-      } else if (response.players.online > 0) {
+      } else if (response.players?.online > 0) {
         // Se non c'è sample ma ci sono giocatori online
         playerList = Array.from({ length: response.players.online }, (_, i) => ({
           name: `Player ${i + 1}`,
@@ -349,17 +349,18 @@ async function queryMinecraftServer() {
         playerList = [];
       }
       
-      console.log(`Server query completata: ${response.players.online}/${response.players.max} giocatori online`);
+      console.log(`Server query completata: ${response.players?.online || 0}/${response.players?.max || 0} giocatori online`);
     }
   } catch (error) {
     console.error('Errore query server Minecraft:', error.message);
     
     // Se c'è un errore di connessione, il server probabilmente non è raggiungibile
-    if (error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+    if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('timeout')) {
       playerList = [];
       serverInfo = { online: 0, max: 0, version: 'Offline', motd: 'Server non raggiungibile' };
     } else {
       // Mantieni i dati precedenti per altri tipi di errore
+      console.log('Mantenendo dati precedenti per errore:', error.message);
     }
   }
 }
