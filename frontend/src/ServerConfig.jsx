@@ -15,7 +15,8 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
     serverPath: '',
     jarFile: '',
     serverHost: '',
-    serverPort: ''
+    serverPort: '',
+    serverType: 'vanilla'
   })
   const [originalConfig, setOriginalConfig] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -107,6 +108,28 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
             <h3>📁 Percorsi Server</h3>
             
             <div className="config-row">
+              <label htmlFor="serverType">Tipo Server</label>
+              <select
+                id="serverType"
+                value={config.serverType}
+                onChange={(e) => handleInputChange('serverType', e.target.value)}
+                disabled={isServerRunning || isLoading}
+                className="server-type-select"
+              >
+                <option value="vanilla">Vanilla</option>
+                <option value="neoforge">NeoForge</option>
+                <option value="forge">Forge</option>
+                <option value="fabric">Fabric</option>
+              </select>
+              <small className="field-help">
+                {config.serverType === 'neoforge' && '⚠️ Per NeoForge verrà utilizzato run.sh e user_jvm_args.txt'}
+                {config.serverType === 'vanilla' && 'ℹ️ Server vanilla standard con file JAR'}
+                {config.serverType === 'forge' && 'ℹ️ Server Forge (versioni precedenti)'}
+                {config.serverType === 'fabric' && 'ℹ️ Server Fabric con launcher'}
+              </small>
+            </div>
+            
+            <div className="config-row">
               <label htmlFor="serverPath">Directory Server Minecraft</label>
               <input
                 type="text"
@@ -119,18 +142,23 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
               />
             </div>
 
-            <div className="config-row">
-              <label htmlFor="jarFile">Nome file JAR</label>
-              <input
-                type="text"
-                id="jarFile"
-                value={config.jarFile}
-                onChange={(e) => handleInputChange('jarFile', e.target.value)}
-                disabled={isServerRunning || isLoading}
-                className="path-input"
-                placeholder="server.jar"
-              />
-            </div>
+            {config.serverType !== 'neoforge' && (
+              <div className="config-row">
+                <label htmlFor="jarFile">Nome file JAR</label>
+                <input
+                  type="text"
+                  id="jarFile"
+                  value={config.jarFile}
+                  onChange={(e) => handleInputChange('jarFile', e.target.value)}
+                  disabled={isServerRunning || isLoading}
+                  className="path-input"
+                  placeholder="server.jar"
+                />
+                <small className="field-help">
+                  ℹ️ Non necessario per NeoForge (usa run.sh)
+                </small>
+              </div>
+            )}
 
             <div className="config-row">
               <label htmlFor="serverHost">Host Server (per monitoraggio)</label>
@@ -195,18 +223,34 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
             </div>
 
             <div className="ram-preview">
+              {config.serverType !== 'neoforge' && (
+                <div className="preview-item">
+                  <span className="preview-label">Percorso completo JAR:</span>
+                  <code className="preview-command">
+                    {config.serverPath}/{config.jarFile}
+                  </code>
+                </div>
+              )}
               <div className="preview-item">
-                <span className="preview-label">Percorso completo JAR:</span>
+                <span className="preview-label">Comando di avvio:</span>
                 <code className="preview-command">
-                  {config.serverPath}/{config.jarFile}
+                  {config.serverType === 'neoforge' ? (
+                    `cd "${config.serverPath}" && chmod +x run.sh && ./run.sh`
+                  ) : config.serverType === 'vanilla' ? (
+                    `cd "${config.serverPath}" && java -Xmx${config.maxRam}G -Xms${config.minRam}G -jar "${config.jarFile}" nogui`
+                  ) : (
+                    `cd "${config.serverPath}" && java -jar "${config.jarFile}" nogui`
+                  )}
                 </code>
               </div>
-              <div className="preview-item">
-                <span className="preview-label">Comando Java:</span>
-                <code className="preview-command">
-                  cd "{config.serverPath}" && java -Xmx{config.maxRam}G -Xms{config.minRam}G -jar "{config.jarFile}" nogui
-                </code>
-              </div>
+              {config.serverType === 'neoforge' && (
+                <div className="preview-item">
+                  <span className="preview-label">Impostazioni RAM (user_jvm_args.txt):</span>
+                  <code className="preview-command">
+                    -Xmx{config.maxRam}G{'\n'}-Xms{config.minRam}G
+                  </code>
+                </div>
+              )}
             </div>
           </div>
 
@@ -214,9 +258,16 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
             <h4>💡 Raccomandazioni</h4>
             <ul>
               <li><strong>Percorso Server:</strong> Assicurati che la directory esista e contenga il server</li>
-              <li><strong>File JAR:</strong> Specifica il nome esatto del file server (es. server.jar, paper.jar)</li>
+              {config.serverType === 'neoforge' ? (
+                <>
+                  <li><strong>NeoForge:</strong> Assicurati che run.sh e user_jvm_args.txt siano presenti</li>
+                  <li><strong>RAM NeoForge:</strong> Le impostazioni RAM saranno scritte in user_jvm_args.txt</li>
+                </>
+              ) : (
+                <li><strong>File JAR:</strong> Specifica il nome esatto del file server (es. server.jar, paper.jar)</li>
+              )}
               <li><strong>Host/Porta:</strong> Usa localhost:25565 se il server è sulla stessa macchina</li>
-              <li><strong>RAM:</strong> 2-4GB per vanilla, 4-8GB+ per server modded</li>
+              <li><strong>RAM:</strong> {config.serverType === 'vanilla' ? '2-4GB per vanilla' : '4-8GB+ per server modded'}</li>
               <li><strong>Sistema:</strong> Lascia almeno 2GB per il sistema operativo</li>
             </ul>
           </div>

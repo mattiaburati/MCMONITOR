@@ -105,7 +105,8 @@
 
 .ram-input,
 .path-input,
-.port-input {
+.port-input,
+.server-type-select {
   padding: 0.75rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 10px;
@@ -120,9 +121,19 @@
   font-size: 0.9rem;
 }
 
+.server-type-select {
+  cursor: pointer;
+}
+
+.server-type-select option {
+  background: #333;
+  color: white;
+}
+
 .ram-input:focus,
 .path-input:focus,
-.port-input:focus {
+.port-input:focus,
+.server-type-select:focus {
   outline: none;
   border-color: rgba(76, 175, 80, 0.6);
   background: rgba(255, 255, 255, 0.15);
@@ -131,9 +142,18 @@
 
 .ram-input:disabled,
 .path-input:disabled,
-.port-input:disabled {
+.port-input:disabled,
+.server-type-select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.field-help {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  display: block;
+  font-style: italic;
 }
 
 .ram-preview {

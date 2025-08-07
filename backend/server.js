@@ -158,7 +158,7 @@ app.get('/api/config', authMiddleware, (req, res) => {
 
 app.put('/api/config', authMiddleware, (req, res) => {
   try {
-    const { minRam, maxRam, javaArgs, serverPath, jarFile, serverHost, serverPort } = req.body;
+    const { minRam, maxRam, javaArgs, serverPath, jarFile, serverHost, serverPort, serverType } = req.body;
     
     if (serverStatus === 'running') {
       return res.status(400).json({ 
@@ -173,7 +173,8 @@ app.put('/api/config', authMiddleware, (req, res) => {
       serverPath, 
       jarFile, 
       serverHost, 
-      serverPort 
+      serverPort,
+      serverType
     });
     
     res.json({ 
