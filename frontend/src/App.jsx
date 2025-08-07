@@ -2,18 +2,17 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import Login from './Login'
 import ServerConfig from './ServerConfig'
-import ApiConfig from './ApiConfig'
 import PlayersList from './PlayersList'
 import Console from './Console'
 import './App.css'
 
-// Funzione per ottenere l'URL API configurabile
+// Funzione per ottenere l'URL API dal file .env
 const getApiBase = () => {
-  return localStorage.getItem('api_base_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
 }
 
 const getWsUrl = () => {
-  return localStorage.getItem('ws_url') || import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
+  return import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
 }
 
 function App() {
@@ -27,7 +26,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [ws, setWs] = useState(null)
   const [showConfig, setShowConfig] = useState(false)
-  const [showApiConfig, setShowApiConfig] = useState(false)
   const [showConsole, setShowConsole] = useState(false)
   const [playersData, setPlayersData] = useState(null)
   const consoleRef = useRef(null)
@@ -166,13 +164,6 @@ function App() {
             🖥️ Console
           </button>
           <button 
-            className="api-config-btn"
-            onClick={() => setShowApiConfig(true)}
-            title="Configurazione API"
-          >
-            🔧 API
-          </button>
-          <button 
             className="config-btn"
             onClick={() => setShowConfig(true)}
             title="Configurazione Server"
@@ -297,11 +288,6 @@ function App() {
         </div>
       </main>
       
-      <ApiConfig
-        isVisible={showApiConfig}
-        onClose={() => setShowApiConfig(false)}
-        onConfigChange={() => {}} 
-      />
       
       <ServerConfig
         isVisible={showConfig}

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './PlayersList.css'
 
-// Funzione per ottenere l'URL API configurabile
+// Funzione per ottenere l'URL API dal file .env
 const getApiBase = () => {
-  return localStorage.getItem('api_base_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
 }
 
 function PlayersList({ serverStatus, playersData }) {
