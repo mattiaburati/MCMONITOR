@@ -2,7 +2,10 @@ import { useState } from 'react'
 import axios from 'axios'
 import './Login.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+// Funzione per ottenere l'URL API configurabile
+const getApiBase = () => {
+  return localStorage.getItem('api_base_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+}
 
 function Login({ onLogin }) {
   const [credentials, setCredentials] = useState({
@@ -26,7 +29,7 @@ function Login({ onLogin }) {
     setError('')
 
     try {
-      const response = await axios.post(`${API_BASE}/login`, credentials)
+      const response = await axios.post(`${getApiBase()}/login`, credentials)
       const { token } = response.data
       
       localStorage.setItem('auth_token', token)

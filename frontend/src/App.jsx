@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Login from './Login'
 import ServerConfig from './ServerConfig'
+import ApiConfig from './ApiConfig'
+import PlayersList from './PlayersList'
 import './App.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+// Funzione per ottenere l'URL API configurabile
+const getApiBase = () => {
+  return localStorage.getItem('api_base_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+}
+
+const getWsUrl = () => {
+  return localStorage.getItem('ws_url') || import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
+}
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -17,6 +26,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [ws, setWs] = useState(null)
   const [showConfig, setShowConfig] = useState(false)
+  const [showApiConfig, setShowApiConfig] = useState(false)
+  const [playersData, setPlayersData] = useState(null)
 
   useEffect(() => {
     // Verifica token esistente
@@ -30,7 +41,7 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) return
 
-    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3001'
+    const wsUrl = getWsUrl()
     const websocket = new WebSocket(wsUrl)
     
     websocket.onopen = () => {
@@ -43,6 +54,13 @@ function App() {
       
       if (data.type === 'status') {
         setServerStatus(data.data.status)
+        // Aggiorna anche i dati dei giocatori se presenti
+        if (data.data.players !== undefined) {
+          setPlayersData({
+            players: data.data.players,
+            info: data.data.info
+          })
+        }
       } else if (data.type === 'system') {
         setSystemInfo(prev => ({
           ...prev,
@@ -86,7 +104,7 @@ function App() {
 
   const fetchSystemInfo = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/system`)
+      const response = await axios.get(`${getApiBase()}/system`)
       setSystemInfo(response.data)
     } catch (error) {
       console.error('Errore nel recupero dati sistema:', error)
@@ -99,7 +117,7 @@ function App() {
   const handleServerAction = async (action) => {
     setIsLoading(true)
     try {
-      const response = await axios.post(`${API_BASE}/${action}`)
+      const response = await axios.post(`${getApiBase()}/${action}`)
       console.log(response.data.message)
     } catch (error) {
       console.error(`Errore ${action}:`, error.response?.data?.error || error.message)
@@ -136,11 +154,18 @@ function App() {
         <h1>🎮 Minecraft Server Monitor</h1>
         <div className="header-buttons">
           <button 
+            className="api-config-btn"
+            onClick={() => setShowApiConfig(true)}
+            title="Configurazione API"
+          >
+            🔧 API
+          </button>
+          <button 
             className="config-btn"
             onClick={() => setShowConfig(true)}
-            title="Configurazione"
+            title="Configurazione Server"
           >
-            ⚙️ Config
+            ⚙️ Server
           </button>
           <button 
             className="logout-btn"
@@ -189,67 +214,82 @@ function App() {
           </div>
         </div>
 
-        <div className="metrics-section">
-          <div className="metric-card">
-            <h3>💻 CPU</h3>
-            <div className="metric-value">
-              <span className="percentage" style={{ color: getUsageColor(systemInfo.cpu.usage) }}>
-                {systemInfo.cpu.usage}%
-              </span>
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill"
-                  style={{ 
-                    width: `${systemInfo.cpu.usage}%`,
-                    backgroundColor: getUsageColor(systemInfo.cpu.usage)
-                  }}
-                />
-              </div>
-              <small>{systemInfo.cpu.cores} cores</small>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <h3>🧠 RAM</h3>
-            <div className="metric-value">
-              <span className="percentage" style={{ color: getUsageColor(systemInfo.memory.usage) }}>
-                {systemInfo.memory.usage}%
-              </span>
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill"
-                  style={{ 
-                    width: `${systemInfo.memory.usage}%`,
-                    backgroundColor: getUsageColor(systemInfo.memory.usage)
-                  }}
-                />
-              </div>
-              <small>{systemInfo.memory.used}GB / {systemInfo.memory.total}GB</small>
-            </div>
-          </div>
-
-          {systemInfo.disk.map((disk, index) => (
-            <div key={index} className="metric-card">
-              <h3>💾 Disco {disk.filesystem}</h3>
+        <div className="content-grid">
+          <div className="metrics-section">
+            <div className="metric-card">
+              <h3>💻 CPU</h3>
               <div className="metric-value">
-                <span className="percentage" style={{ color: getUsageColor(disk.usage) }}>
-                  {disk.usage}%
+                <span className="percentage" style={{ color: getUsageColor(systemInfo.cpu.usage) }}>
+                  {systemInfo.cpu.usage}%
                 </span>
                 <div className="progress-bar">
                   <div 
                     className="progress-fill"
                     style={{ 
-                      width: `${disk.usage}%`,
-                      backgroundColor: getUsageColor(disk.usage)
+                      width: `${systemInfo.cpu.usage}%`,
+                      backgroundColor: getUsageColor(systemInfo.cpu.usage)
                     }}
                   />
                 </div>
-                <small>{disk.used}GB / {disk.size}GB</small>
+                <small>{systemInfo.cpu.cores} cores</small>
               </div>
             </div>
-          ))}
+
+            <div className="metric-card">
+              <h3>🧠 RAM</h3>
+              <div className="metric-value">
+                <span className="percentage" style={{ color: getUsageColor(systemInfo.memory.usage) }}>
+                  {systemInfo.memory.usage}%
+                </span>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill"
+                    style={{ 
+                      width: `${systemInfo.memory.usage}%`,
+                      backgroundColor: getUsageColor(systemInfo.memory.usage)
+                    }}
+                  />
+                </div>
+                <small>{systemInfo.memory.used}GB / {systemInfo.memory.total}GB</small>
+              </div>
+            </div>
+
+            {systemInfo.disk.map((disk, index) => (
+              <div key={index} className="metric-card">
+                <h3>💾 Disco {disk.filesystem}</h3>
+                <div className="metric-value">
+                  <span className="percentage" style={{ color: getUsageColor(disk.usage) }}>
+                    {disk.usage}%
+                  </span>
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill"
+                      style={{ 
+                        width: `${disk.usage}%`,
+                        backgroundColor: getUsageColor(disk.usage)
+                      }}
+                    />
+                  </div>
+                  <small>{disk.used}GB / {disk.size}GB</small>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="players-section">
+            <PlayersList 
+              serverStatus={serverStatus}
+              playersData={playersData}
+            />
+          </div>
         </div>
       </main>
+      
+      <ApiConfig
+        isVisible={showApiConfig}
+        onClose={() => setShowApiConfig(false)}
+        onConfigChange={() => {}} 
+      />
       
       <ServerConfig
         isVisible={showConfig}

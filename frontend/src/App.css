@@ -111,10 +111,21 @@ body {
   color: white;
 }
 
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
 .metrics-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
+}
+
+.players-section {
+  /* Il componente PlayersList gestirà la sua altezza */
 }
 
 .metric-card {
@@ -169,6 +180,7 @@ small {
   align-items: center;
 }
 
+.api-config-btn,
 .config-btn,
 .logout-btn {
   border: none;
@@ -180,6 +192,16 @@ small {
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
+}
+
+.api-config-btn {
+  background: rgba(156, 39, 176, 0.8);
+}
+
+.api-config-btn:hover {
+  background: rgba(156, 39, 176, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .config-btn {

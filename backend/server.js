@@ -8,6 +8,7 @@ const { exec } = require('child_process');
 const path = require('path');
 const { authenticateUser, authMiddleware, initializeAuth } = require('./auth');
 const { getConfig, saveConfig, buildJavaCommand } = require('./config');
+const mcstatus = require('mcstatus');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,9 +19,13 @@ app.use(express.json());
 
 const MINECRAFT_SERVER_PATH = process.env.MINECRAFT_SERVER_PATH || '/home/minecraft/server';
 const MINECRAFT_JAR = process.env.MINECRAFT_JAR || 'server.jar';
+const MINECRAFT_SERVER_HOST = process.env.MINECRAFT_SERVER_HOST || 'localhost';
+const MINECRAFT_SERVER_PORT = process.env.MINECRAFT_SERVER_PORT || 25565;
 
 let minecraftProcess = null;
 let serverStatus = 'stopped';
+let playerList = [];
+let serverInfo = { online: 0, max: 0, version: '', motd: '' };
 
 // Health check endpoint (pubblico)
 app.get('/health', (req, res) => {
@@ -175,6 +180,15 @@ app.put('/api/config', authMiddleware, (req, res) => {
   }
 });
 
+// Endpoint per giocatori online
+app.get('/api/players', authMiddleware, (req, res) => {
+  res.json({
+    players: playerList,
+    info: serverInfo,
+    serverStatus: serverStatus
+  });
+});
+
 app.get('/api/system', authMiddleware, async (req, res) => {
   try {
     const cpu = await si.currentLoad();
@@ -203,10 +217,54 @@ app.get('/api/system', authMiddleware, async (req, res) => {
   }
 });
 
+// Funzione per query server Minecraft
+async function queryMinecraftServer() {
+  if (serverStatus !== 'running') {
+    playerList = [];
+    serverInfo = { online: 0, max: 0, version: '', motd: '' };
+    return;
+  }
+
+  try {
+    // Query del server usando mcstatus
+    const response = await mcstatus.statusJava(MINECRAFT_SERVER_HOST, parseInt(MINECRAFT_SERVER_PORT));
+    
+    if (response) {
+      serverInfo = {
+        online: response.players?.online || 0,
+        max: response.players?.max || 0,
+        version: response.version?.name || 'Unknown',
+        motd: response.motd?.clean || ''
+      };
+
+      // Lista giocatori (se disponibile)
+      if (response.players?.sample) {
+        playerList = response.players.sample.map(player => ({
+          name: player.name,
+          uuid: player.id
+        }));
+      } else {
+        // Se sample non è disponibile, usiamo solo il conteggio
+        playerList = Array.from({ length: response.players?.online || 0 }, (_, i) => ({
+          name: `Player ${i + 1}`,
+          uuid: `unknown-${i}`
+        }));
+      }
+    }
+  } catch (error) {
+    console.error('Errore query server Minecraft:', error.message);
+    // Mantieni i dati precedenti in caso di errore temporaneo
+  }
+}
+
 function broadcastStatus() {
   const message = JSON.stringify({
     type: 'status',
-    data: { status: serverStatus }
+    data: { 
+      status: serverStatus,
+      players: playerList,
+      info: serverInfo
+    }
   });
 
   wss.clients.forEach(client => {
@@ -254,6 +312,10 @@ wss.on('connection', (ws) => {
 });
 
 setInterval(broadcastSystemInfo, 2000);
+setInterval(async () => {
+  await queryMinecraftServer();
+  broadcastStatus();
+}, 5000); // Query server Minecraft ogni 5 secondi
 
 // Inizializza autenticazione
 initializeAuth().then(() => {

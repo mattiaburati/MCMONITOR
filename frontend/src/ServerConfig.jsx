@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './ServerConfig.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+// Funzione per ottenere l'URL API configurabile
+const getApiBase = () => {
+  return localStorage.getItem('api_base_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+}
 
 function ServerConfig({ isVisible, onClose, serverStatus }) {
   const [config, setConfig] = useState({
@@ -22,7 +25,7 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
 
   const fetchConfig = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/config`)
+      const response = await axios.get(`${getApiBase()}/config`)
       const configData = response.data
       setConfig(configData)
       setOriginalConfig(configData)
@@ -48,7 +51,7 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      const response = await axios.put(`${API_BASE}/config`, config)
+      const response = await axios.put(`${getApiBase()}/config`, config)
       setOriginalConfig(config)
       setHasChanges(false)
       alert('Configurazione salvata con successo!')
