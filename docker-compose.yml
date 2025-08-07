@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mcmonitor-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-password123}
+      - MINECRAFT_SERVER_PATH=${MINECRAFT_SERVER_PATH:-/home/minecraft/server}
+      - MINECRAFT_JAR=${MINECRAFT_JAR:-server.jar}
+    volumes:
+      # Volume per accedere al server Minecraft sul host
+      - ${MINECRAFT_SERVER_PATH:-/home/minecraft/server}:/minecraft:ro
+      # Volume per configurazioni persistenti
+      - backend-config:/app/config
+    networks:
+      - mcmonitor-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mcmonitor-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - REACT_APP_API_BASE_URL=http://backend:3001/api
+    networks:
+      - mcmonitor-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  mcmonitor-network:
+    driver: bridge
+
+volumes:
+  backend-config:
+    driver: local

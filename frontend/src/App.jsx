@@ -4,7 +4,7 @@ import Login from './Login'
 import ServerConfig from './ServerConfig'
 import './App.css'
 
-const API_BASE = 'http://localhost:3001/api'
+const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -30,7 +30,8 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) return
 
-    const websocket = new WebSocket('ws://localhost:3001')
+    const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:3001'
+    const websocket = new WebSocket(wsUrl)
     
     websocket.onopen = () => {
       console.log('Connessione WebSocket stabilita')

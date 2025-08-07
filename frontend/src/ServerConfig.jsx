@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './ServerConfig.css'
 
-const API_BASE = 'http://localhost:3001/api'
+const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001/api'
 
 function ServerConfig({ isVisible, onClose, serverStatus }) {
   const [config, setConfig] = useState({
