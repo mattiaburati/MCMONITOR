@@ -7,7 +7,7 @@ const si = require('systeminformation');
 const { exec } = require('child_process');
 const path = require('path');
 const { authenticateUser, authMiddleware, initializeAuth } = require('./auth');
-const { getConfig, saveConfig, buildJavaCommand } = require('./config');
+const { getConfig, saveConfig, buildJavaCommand, getCurrentPaths } = require('./config');
 const mcstatus = require('mcstatus');
 
 const app = express();
@@ -17,10 +17,7 @@ const wss = new WebSocket.Server({ server });
 app.use(cors());
 app.use(express.json());
 
-const MINECRAFT_SERVER_PATH = process.env.MINECRAFT_SERVER_PATH || '/home/minecraft/server';
-const MINECRAFT_JAR = process.env.MINECRAFT_JAR || 'server.jar';
-const MINECRAFT_SERVER_HOST = process.env.MINECRAFT_SERVER_HOST || 'localhost';
-const MINECRAFT_SERVER_PORT = process.env.MINECRAFT_SERVER_PORT || 25565;
+// I percorsi ora vengono gestiti dalla configurazione dinamica
 
 let minecraftProcess = null;
 let serverStatus = 'stopped';
@@ -63,7 +60,7 @@ app.post('/api/start', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'Server già in esecuzione' });
   }
 
-  const command = buildJavaCommand(MINECRAFT_SERVER_PATH, MINECRAFT_JAR);
+  const command = buildJavaCommand();
   
   minecraftProcess = exec(command, (error, stdout, stderr) => {
     if (error) {
@@ -111,7 +108,7 @@ app.post('/api/restart', authMiddleware, (req, res) => {
     
     minecraftProcess.on('exit', () => {
       setTimeout(() => {
-        const command = buildJavaCommand(MINECRAFT_SERVER_PATH, MINECRAFT_JAR);
+        const command = buildJavaCommand();
         
         minecraftProcess = exec(command, (error, stdout, stderr) => {
           if (error) {
@@ -136,7 +133,7 @@ app.post('/api/restart', authMiddleware, (req, res) => {
 
     serverStatus = 'restarting';
   } else {
-    const command = buildJavaCommand(MINECRAFT_SERVER_PATH, MINECRAFT_JAR);
+    const command = buildJavaCommand();
     
     minecraftProcess = exec(command);
     minecraftProcess.on('spawn', () => {
@@ -161,7 +158,7 @@ app.get('/api/config', authMiddleware, (req, res) => {
 
 app.put('/api/config', authMiddleware, (req, res) => {
   try {
-    const { minRam, maxRam, javaArgs } = req.body;
+    const { minRam, maxRam, javaArgs, serverPath, jarFile, serverHost, serverPort } = req.body;
     
     if (serverStatus === 'running') {
       return res.status(400).json({ 
@@ -169,7 +166,16 @@ app.put('/api/config', authMiddleware, (req, res) => {
       });
     }
 
-    const updatedConfig = saveConfig({ minRam, maxRam, javaArgs });
+    const updatedConfig = saveConfig({ 
+      minRam, 
+      maxRam, 
+      javaArgs, 
+      serverPath, 
+      jarFile, 
+      serverHost, 
+      serverPort 
+    });
+    
     res.json({ 
       message: 'Configurazione aggiornata con successo',
       config: updatedConfig 
@@ -226,8 +232,9 @@ async function queryMinecraftServer() {
   }
 
   try {
-    // Query del server usando mcstatus
-    const response = await mcstatus.statusJava(MINECRAFT_SERVER_HOST, parseInt(MINECRAFT_SERVER_PORT));
+    // Query del server usando mcstatus con percorsi dinamici
+    const paths = getCurrentPaths();
+    const response = await mcstatus.statusJava(paths.serverHost, parseInt(paths.serverPort));
     
     if (response) {
       serverInfo = {

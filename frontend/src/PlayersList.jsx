@@ -11,10 +11,24 @@ function PlayersList({ serverStatus, playersData }) {
   const [players, setPlayers] = useState([])
   const [serverInfo, setServerInfo] = useState({ online: 0, max: 0, version: '', motd: '' })
   const [isLoading, setIsLoading] = useState(false)
+  const [serverConfig, setServerConfig] = useState({ serverHost: 'localhost', serverPort: '25565' })
 
   useEffect(() => {
     fetchPlayers()
+    fetchServerConfig()
   }, [serverStatus])
+
+  const fetchServerConfig = async () => {
+    try {
+      const response = await axios.get(`${getApiBase()}/config`)
+      setServerConfig({
+        serverHost: response.data.serverHost || 'localhost',
+        serverPort: response.data.serverPort || '25565'
+      })
+    } catch (error) {
+      console.error('Errore nel recupero configurazione server:', error)
+    }
+  }
 
   // Aggiorna i dati quando arrivano via WebSocket
   useEffect(() => {
@@ -140,7 +154,7 @@ function PlayersList({ serverStatus, playersData }) {
       {serverStatus === 'running' && (
         <div className="players-footer">
           <div className="connection-info">
-            📡 Connesso a {process.env.MINECRAFT_SERVER_HOST || 'localhost'}:{process.env.MINECRAFT_SERVER_PORT || 25565}
+            📡 Connesso a {serverConfig.serverHost}:{serverConfig.serverPort}
           </div>
           <div className="last-update">
             Ultimo aggiornamento: {new Date().toLocaleTimeString()}

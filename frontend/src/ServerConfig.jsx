@@ -11,7 +11,11 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
   const [config, setConfig] = useState({
     minRam: 1,
     maxRam: 2,
-    javaArgs: []
+    javaArgs: [],
+    serverPath: '',
+    jarFile: '',
+    serverHost: '',
+    serverPort: ''
   })
   const [originalConfig, setOriginalConfig] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -36,10 +40,17 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
   }
 
   const handleInputChange = (field, value) => {
-    const numValue = field === 'javaArgs' ? value : parseFloat(value)
+    let processedValue = value
+    
+    if (field === 'minRam' || field === 'maxRam') {
+      processedValue = parseFloat(value)
+    } else if (field === 'serverPort') {
+      processedValue = value.toString()
+    }
+    
     const newConfig = {
       ...config,
-      [field]: numValue
+      [field]: processedValue
     }
     setConfig(newConfig)
     
@@ -93,6 +104,64 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
           )}
 
           <div className="config-section">
+            <h3>📁 Percorsi Server</h3>
+            
+            <div className="config-row">
+              <label htmlFor="serverPath">Directory Server Minecraft</label>
+              <input
+                type="text"
+                id="serverPath"
+                value={config.serverPath}
+                onChange={(e) => handleInputChange('serverPath', e.target.value)}
+                disabled={isServerRunning || isLoading}
+                className="path-input"
+                placeholder="/home/minecraft_server"
+              />
+            </div>
+
+            <div className="config-row">
+              <label htmlFor="jarFile">Nome file JAR</label>
+              <input
+                type="text"
+                id="jarFile"
+                value={config.jarFile}
+                onChange={(e) => handleInputChange('jarFile', e.target.value)}
+                disabled={isServerRunning || isLoading}
+                className="path-input"
+                placeholder="server.jar"
+              />
+            </div>
+
+            <div className="config-row">
+              <label htmlFor="serverHost">Host Server (per monitoraggio)</label>
+              <input
+                type="text"
+                id="serverHost"
+                value={config.serverHost}
+                onChange={(e) => handleInputChange('serverHost', e.target.value)}
+                disabled={isServerRunning || isLoading}
+                className="path-input"
+                placeholder="localhost"
+              />
+            </div>
+
+            <div className="config-row">
+              <label htmlFor="serverPort">Porta Server</label>
+              <input
+                type="number"
+                id="serverPort"
+                min="1"
+                max="65535"
+                value={config.serverPort}
+                onChange={(e) => handleInputChange('serverPort', e.target.value)}
+                disabled={isServerRunning || isLoading}
+                className="port-input"
+                placeholder="25565"
+              />
+            </div>
+          </div>
+
+          <div className="config-section">
             <h3>🧠 Configurazione RAM</h3>
             
             <div className="config-row">
@@ -127,9 +196,15 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
 
             <div className="ram-preview">
               <div className="preview-item">
+                <span className="preview-label">Percorso completo JAR:</span>
+                <code className="preview-command">
+                  {config.serverPath}/{config.jarFile}
+                </code>
+              </div>
+              <div className="preview-item">
                 <span className="preview-label">Comando Java:</span>
                 <code className="preview-command">
-                  java -Xmx{config.maxRam}G -Xms{config.minRam}G -jar server.jar nogui
+                  cd "{config.serverPath}" && java -Xmx{config.maxRam}G -Xms{config.minRam}G -jar "{config.jarFile}" nogui
                 </code>
               </div>
             </div>
@@ -138,10 +213,11 @@ function ServerConfig({ isVisible, onClose, serverStatus }) {
           <div className="ram-recommendations">
             <h4>💡 Raccomandazioni</h4>
             <ul>
-              <li><strong>Vanilla/Paper:</strong> 2-4GB per 10-20 giocatori</li>
-              <li><strong>Modded:</strong> 4-8GB+ a seconda dei mod</li>
-              <li><strong>RAM Sistema:</strong> Lascia almeno 2GB per il sistema operativo</li>
-              <li><strong>Regola generale:</strong> MIN = MAX/2 per prestazioni ottimali</li>
+              <li><strong>Percorso Server:</strong> Assicurati che la directory esista e contenga il server</li>
+              <li><strong>File JAR:</strong> Specifica il nome esatto del file server (es. server.jar, paper.jar)</li>
+              <li><strong>Host/Porta:</strong> Usa localhost:25565 se il server è sulla stessa macchina</li>
+              <li><strong>RAM:</strong> 2-4GB per vanilla, 4-8GB+ per server modded</li>
+              <li><strong>Sistema:</strong> Lascia almeno 2GB per il sistema operativo</li>
             </ul>
           </div>
         </div>
