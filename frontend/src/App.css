@@ -180,6 +180,7 @@ small {
   align-items: center;
 }
 
+.console-btn-header,
 .api-config-btn,
 .config-btn,
 .logout-btn {
@@ -192,6 +193,16 @@ small {
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
+}
+
+.console-btn-header {
+  background: rgba(76, 175, 80, 0.8);
+}
+
+.console-btn-header:hover {
+  background: rgba(76, 175, 80, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .api-config-btn {

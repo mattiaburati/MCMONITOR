@@ -23,6 +23,27 @@ let minecraftProcess = null;
 let serverStatus = 'stopped';
 let playerList = [];
 let serverInfo = { online: 0, max: 0, version: '', motd: '' };
+let serverLogs = []; // Buffer per i log del server
+const MAX_LOG_LINES = 1000; // Massimo numero di righe di log da mantenere
+
+// Funzione per aggiungere log e fare broadcast
+const addServerLog = (message, type = 'info') => {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    message: message.toString().trim(),
+    type: type
+  };
+  
+  serverLogs.push(logEntry);
+  
+  // Mantieni solo le ultime MAX_LOG_LINES righe
+  if (serverLogs.length > MAX_LOG_LINES) {
+    serverLogs.splice(0, serverLogs.length - MAX_LOG_LINES);
+  }
+  
+  // Broadcast del log via WebSocket
+  broadcastLog(logEntry);
+};
 
 // Health check endpoint (pubblico)
 app.get('/health', (req, res) => {
@@ -62,22 +83,46 @@ app.post('/api/start', authMiddleware, (req, res) => {
 
   const command = buildJavaCommand();
   
-  minecraftProcess = exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Errore: ${error}`);
-      serverStatus = 'stopped';
-      broadcastStatus();
-    }
+  // Reset dei log quando si avvia il server
+  serverLogs = [];
+  addServerLog('Avvio server in corso...', 'info');
+  addServerLog(`Comando: ${command}`, 'system');
+  
+  minecraftProcess = exec(command, {
+    cwd: getCurrentPaths().serverPath
+  });
+
+  // Cattura l'output del server
+  minecraftProcess.stdout.on('data', (data) => {
+    const lines = data.toString().split('\n').filter(line => line.trim());
+    lines.forEach(line => {
+      addServerLog(line, 'stdout');
+    });
+  });
+
+  minecraftProcess.stderr.on('data', (data) => {
+    const lines = data.toString().split('\n').filter(line => line.trim());
+    lines.forEach(line => {
+      addServerLog(line, 'stderr');
+    });
   });
 
   minecraftProcess.on('spawn', () => {
     serverStatus = 'running';
+    addServerLog('Server avviato con successo!', 'success');
     broadcastStatus();
   });
 
-  minecraftProcess.on('exit', () => {
+  minecraftProcess.on('exit', (code) => {
     serverStatus = 'stopped';
+    addServerLog(`Server arrestato con codice: ${code}`, code === 0 ? 'info' : 'error');
     minecraftProcess = null;
+    broadcastStatus();
+  });
+
+  minecraftProcess.on('error', (error) => {
+    addServerLog(`Errore processo: ${error.message}`, 'error');
+    serverStatus = 'stopped';
     broadcastStatus();
   });
 
@@ -89,12 +134,14 @@ app.post('/api/stop', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'Server non in esecuzione' });
   }
 
+  addServerLog('Arresto server richiesto...', 'info');
   minecraftProcess.stdin.write('stop\n');
   serverStatus = 'stopping';
   broadcastStatus();
 
   setTimeout(() => {
     if (minecraftProcess) {
+      addServerLog('Forzatura arresto server...', 'warning');
       minecraftProcess.kill('SIGTERM');
     }
   }, 10000);
@@ -196,6 +243,43 @@ app.get('/api/players', authMiddleware, (req, res) => {
   });
 });
 
+// Endpoint per ottenere i log del server
+app.get('/api/logs', authMiddleware, (req, res) => {
+  res.json({
+    logs: serverLogs,
+    serverStatus: serverStatus
+  });
+});
+
+// Endpoint per inviare comandi al server
+app.post('/api/command', authMiddleware, (req, res) => {
+  const { command } = req.body;
+  
+  if (!command || typeof command !== 'string') {
+    return res.status(400).json({ error: 'Comando richiesto' });
+  }
+  
+  if (serverStatus !== 'running' || !minecraftProcess) {
+    return res.status(400).json({ error: 'Server non in esecuzione' });
+  }
+  
+  try {
+    // Invia comando al processo del server
+    minecraftProcess.stdin.write(command + '\n');
+    
+    // Log del comando inviato
+    addServerLog(`> ${command}`, 'command');
+    
+    res.json({ 
+      message: 'Comando inviato con successo',
+      command: command
+    });
+  } catch (error) {
+    console.error('Errore invio comando:', error);
+    res.status(500).json({ error: 'Errore nell\'invio del comando' });
+  }
+});
+
 app.get('/api/system', authMiddleware, async (req, res) => {
   try {
     const cpu = await si.currentLoad();
@@ -265,6 +349,19 @@ function broadcastStatus() {
       players: playerList,
       info: serverInfo
     }
+  });
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+function broadcastLog(logEntry) {
+  const message = JSON.stringify({
+    type: 'log',
+    data: logEntry
   });
 
   wss.clients.forEach(client => {

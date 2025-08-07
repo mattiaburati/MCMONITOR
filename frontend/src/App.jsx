@@ -4,6 +4,7 @@ import Login from './Login'
 import ServerConfig from './ServerConfig'
 import ApiConfig from './ApiConfig'
 import PlayersList from './PlayersList'
+import Console from './Console'
 import './App.css'
 
 // Funzione per ottenere l'URL API configurabile
@@ -27,7 +28,9 @@ function App() {
   const [ws, setWs] = useState(null)
   const [showConfig, setShowConfig] = useState(false)
   const [showApiConfig, setShowApiConfig] = useState(false)
+  const [showConsole, setShowConsole] = useState(false)
   const [playersData, setPlayersData] = useState(null)
+  const [consoleRef, setConsoleRef] = useState(null)
 
   useEffect(() => {
     // Verifica token esistente
@@ -67,6 +70,8 @@ function App() {
           cpu: { ...prev.cpu, usage: data.data.cpu },
           memory: { ...prev.memory, usage: data.data.memory }
         }))
+      } else if (data.type === 'log' && consoleRef && consoleRef.handleNewLog) {
+        consoleRef.handleNewLog(data.data)
       }
     }
 
@@ -153,6 +158,13 @@ function App() {
       <header className="header">
         <h1>🎮 Minecraft Server Monitor</h1>
         <div className="header-buttons">
+          <button 
+            className="console-btn-header"
+            onClick={() => setShowConsole(true)}
+            title="Console Server"
+          >
+            🖥️ Console
+          </button>
           <button 
             className="api-config-btn"
             onClick={() => setShowApiConfig(true)}
@@ -295,6 +307,13 @@ function App() {
         isVisible={showConfig}
         onClose={() => setShowConfig(false)}
         serverStatus={serverStatus}
+      />
+      
+      <Console
+        ref={setConsoleRef}
+        serverStatus={serverStatus}
+        isVisible={showConsole}
+        onClose={() => setShowConsole(false)}
       />
     </div>
   )
