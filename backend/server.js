@@ -22,6 +22,11 @@ const MINECRAFT_JAR = process.env.MINECRAFT_JAR || 'server.jar';
 let minecraftProcess = null;
 let serverStatus = 'stopped';
 
+// Health check endpoint (pubblico)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Endpoint di login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
