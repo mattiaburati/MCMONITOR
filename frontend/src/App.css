@@ -190,11 +190,20 @@ small {
     gap: 1rem;
     text-align: center;
   }
+  
+  .header-buttons {
+    justify-content: center;
+  }
 }
 
+.header-buttons {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.config-btn,
 .logout-btn {
-  background: rgba(244, 67, 54, 0.8);
-  color: white;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -203,6 +212,21 @@ small {
   font-weight: 500;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.config-btn {
+  background: rgba(33, 150, 243, 0.8);
+}
+
+.config-btn:hover {
+  background: rgba(33, 150, 243, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.logout-btn {
+  background: rgba(244, 67, 54, 0.8);
 }
 
 .logout-btn:hover {

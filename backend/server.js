@@ -7,6 +7,7 @@ const si = require('systeminformation');
 const { exec } = require('child_process');
 const path = require('path');
 const { authenticateUser, authMiddleware, initializeAuth } = require('./auth');
+const { getConfig, saveConfig, buildJavaCommand } = require('./config');
 
 const app = express();
 const server = http.createServer(app);
@@ -52,7 +53,7 @@ app.post('/api/start', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'Server già in esecuzione' });
   }
 
-  const command = `cd ${MINECRAFT_SERVER_PATH} && java -Xmx2G -Xms1G -jar ${MINECRAFT_JAR} nogui`;
+  const command = buildJavaCommand(MINECRAFT_SERVER_PATH, MINECRAFT_JAR);
   
   minecraftProcess = exec(command, (error, stdout, stderr) => {
     if (error) {
@@ -100,7 +101,7 @@ app.post('/api/restart', authMiddleware, (req, res) => {
     
     minecraftProcess.on('exit', () => {
       setTimeout(() => {
-        const command = `cd ${MINECRAFT_SERVER_PATH} && java -Xmx2G -Xms1G -jar ${MINECRAFT_JAR} nogui`;
+        const command = buildJavaCommand(MINECRAFT_SERVER_PATH, MINECRAFT_JAR);
         
         minecraftProcess = exec(command, (error, stdout, stderr) => {
           if (error) {
@@ -125,7 +126,7 @@ app.post('/api/restart', authMiddleware, (req, res) => {
 
     serverStatus = 'restarting';
   } else {
-    const command = `cd ${MINECRAFT_SERVER_PATH} && java -Xmx2G -Xms1G -jar ${MINECRAFT_JAR} nogui`;
+    const command = buildJavaCommand(MINECRAFT_SERVER_PATH, MINECRAFT_JAR);
     
     minecraftProcess = exec(command);
     minecraftProcess.on('spawn', () => {
@@ -135,6 +136,38 @@ app.post('/api/restart', authMiddleware, (req, res) => {
   }
 
   res.json({ message: 'Restart server in corso', status: serverStatus });
+});
+
+// Endpoints per configurazione server
+app.get('/api/config', authMiddleware, (req, res) => {
+  try {
+    const config = getConfig();
+    res.json(config);
+  } catch (error) {
+    console.error('Errore recupero configurazione:', error);
+    res.status(500).json({ error: 'Errore nel recupero della configurazione' });
+  }
+});
+
+app.put('/api/config', authMiddleware, (req, res) => {
+  try {
+    const { minRam, maxRam, javaArgs } = req.body;
+    
+    if (serverStatus === 'running') {
+      return res.status(400).json({ 
+        error: 'Non è possibile modificare la configurazione mentre il server è in esecuzione' 
+      });
+    }
+
+    const updatedConfig = saveConfig({ minRam, maxRam, javaArgs });
+    res.json({ 
+      message: 'Configurazione aggiornata con successo',
+      config: updatedConfig 
+    });
+  } catch (error) {
+    console.error('Errore salvataggio configurazione:', error);
+    res.status(400).json({ error: error.message });
+  }
 });
 
 app.get('/api/system', authMiddleware, async (req, res) => {

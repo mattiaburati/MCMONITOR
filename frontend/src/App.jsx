@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Login from './Login'
+import ServerConfig from './ServerConfig'
 import './App.css'
 
 const API_BASE = 'http://localhost:3001/api'
@@ -15,6 +16,7 @@ function App() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [ws, setWs] = useState(null)
+  const [showConfig, setShowConfig] = useState(false)
 
   useEffect(() => {
     // Verifica token esistente
@@ -131,13 +133,22 @@ function App() {
     <div className="app">
       <header className="header">
         <h1>🎮 Minecraft Server Monitor</h1>
-        <button 
-          className="logout-btn"
-          onClick={handleLogout}
-          title="Logout"
-        >
-          🚪 Esci
-        </button>
+        <div className="header-buttons">
+          <button 
+            className="config-btn"
+            onClick={() => setShowConfig(true)}
+            title="Configurazione"
+          >
+            ⚙️ Config
+          </button>
+          <button 
+            className="logout-btn"
+            onClick={handleLogout}
+            title="Logout"
+          >
+            🚪 Esci
+          </button>
+        </div>
       </header>
 
       <main className="main">
@@ -238,6 +249,12 @@ function App() {
           ))}
         </div>
       </main>
+      
+      <ServerConfig
+        isVisible={showConfig}
+        onClose={() => setShowConfig(false)}
+        serverStatus={serverStatus}
+      />
     </div>
   )
 }

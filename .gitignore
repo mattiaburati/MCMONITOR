@@ -50,3 +50,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Server configuration
+backend/server-config.json
