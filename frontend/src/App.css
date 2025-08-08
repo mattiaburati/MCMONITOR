@@ -183,6 +183,7 @@ small {
 .console-btn-header,
 .api-config-btn,
 .config-btn,
+.mod-btn,
 .logout-btn {
   border: none;
   padding: 0.5rem 1rem;
@@ -221,6 +222,16 @@ small {
 
 .config-btn:hover {
   background: rgba(33, 150, 243, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.mod-btn {
+  background: rgba(111, 66, 193, 0.8);
+}
+
+.mod-btn:hover {
+  background: rgba(111, 66, 193, 1);
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }

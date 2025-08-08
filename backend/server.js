@@ -9,6 +9,8 @@ const path = require('path');
 const { authenticateUser, authMiddleware, initializeAuth } = require('./auth');
 const { getConfig, saveConfig, buildJavaCommand, getCurrentPaths } = require('./config');
 const { status } = require('minecraft-server-util');
+const fs = require('fs').promises;
+const multer = require('multer');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,6 +18,22 @@ const wss = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json());
+
+// Configurazione multer per upload mods
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.endsWith('.jar')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo file .jar sono supportati'), false);
+    }
+  },
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB max
+  }
+});
 
 // I percorsi ora vengono gestiti dalla configurazione dinamica
 
@@ -305,6 +323,114 @@ app.get('/api/system', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Errore nel recupero dati sistema' });
+  }
+});
+
+// Endpoints per gestione mods
+app.get('/api/mods', authMiddleware, async (req, res) => {
+  try {
+    const paths = getCurrentPaths();
+    const modsPath = path.join(paths.serverPath, 'mods');
+    
+    try {
+      await fs.access(modsPath);
+    } catch (error) {
+      await fs.mkdir(modsPath, { recursive: true });
+    }
+
+    const files = await fs.readdir(modsPath);
+    const jarFiles = files.filter(file => file.endsWith('.jar'));
+    
+    const mods = await Promise.all(jarFiles.map(async (filename) => {
+      const filePath = path.join(modsPath, filename);
+      const stats = await fs.stat(filePath);
+      
+      return {
+        filename,
+        size: Math.round(stats.size / 1024), // KB
+        lastModified: stats.mtime.toISOString()
+      };
+    }));
+
+    res.json({ mods });
+  } catch (error) {
+    console.error('Errore recupero mods:', error);
+    res.status(500).json({ error: 'Errore nel recupero delle mods' });
+  }
+});
+
+app.post('/api/mods/upload', authMiddleware, upload.single('modFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Nessun file caricato' });
+    }
+
+    const paths = getCurrentPaths();
+    const modsPath = path.join(paths.serverPath, 'mods');
+    
+    try {
+      await fs.access(modsPath);
+    } catch (error) {
+      await fs.mkdir(modsPath, { recursive: true });
+    }
+
+    const filename = req.file.originalname;
+    const filePath = path.join(modsPath, filename);
+    
+    try {
+      await fs.access(filePath);
+      return res.status(409).json({ error: 'Una mod con questo nome esiste già' });
+    } catch (error) {
+      // File non esiste, procediamo
+    }
+
+    await fs.writeFile(filePath, req.file.buffer);
+    
+    const stats = await fs.stat(filePath);
+    const modInfo = {
+      filename,
+      size: Math.round(stats.size / 1024),
+      lastModified: stats.mtime.toISOString()
+    };
+
+    addServerLog(`Mod caricata: ${filename} (${modInfo.size}KB)`, 'info');
+    
+    res.json({ 
+      message: 'Mod caricata con successo',
+      mod: modInfo
+    });
+  } catch (error) {
+    console.error('Errore upload mod:', error);
+    res.status(500).json({ error: 'Errore nel caricamento della mod' });
+  }
+});
+
+app.delete('/api/mods/:filename', authMiddleware, async (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    if (!filename || !filename.endsWith('.jar')) {
+      return res.status(400).json({ error: 'Nome file non valido' });
+    }
+
+    const paths = getCurrentPaths();
+    const modsPath = path.join(paths.serverPath, 'mods');
+    const filePath = path.join(modsPath, filename);
+    
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      return res.status(404).json({ error: 'Mod non trovata' });
+    }
+
+    await fs.unlink(filePath);
+    
+    addServerLog(`Mod rimossa: ${filename}`, 'info');
+    
+    res.json({ message: 'Mod rimossa con successo' });
+  } catch (error) {
+    console.error('Errore rimozione mod:', error);
+    res.status(500).json({ error: 'Errore nella rimozione della mod' });
   }
 });
 

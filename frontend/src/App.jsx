@@ -4,6 +4,7 @@ import Login from './Login'
 import ServerConfig from './ServerConfig'
 import PlayersList from './PlayersList'
 import Console from './Console'
+import ModManager from './ModManager'
 import './App.css'
 
 // Funzione per ottenere l'URL API dal file .env
@@ -27,6 +28,7 @@ function App() {
   const [ws, setWs] = useState(null)
   const [showConfig, setShowConfig] = useState(false)
   const [showConsole, setShowConsole] = useState(false)
+  const [showModManager, setShowModManager] = useState(false)
   const [playersData, setPlayersData] = useState(null)
   const consoleRef = useRef(null)
 
@@ -171,6 +173,13 @@ function App() {
             ⚙️ Server
           </button>
           <button 
+            className="mod-btn"
+            onClick={() => setShowModManager(true)}
+            title="Gestione Mod"
+          >
+            🔧 Mod
+          </button>
+          <button 
             className="logout-btn"
             onClick={handleLogout}
             title="Logout"
@@ -300,6 +309,11 @@ function App() {
         serverStatus={serverStatus}
         isVisible={showConsole}
         onClose={() => setShowConsole(false)}
+      />
+      
+      <ModManager
+        isVisible={showModManager}
+        onClose={() => setShowModManager(false)}
       />
     </div>
   )

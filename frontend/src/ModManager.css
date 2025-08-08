@@ -1,0 +1,273 @@
+.mod-manager-modal {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mod-manager-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.upload-section {
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.upload-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #495057;
+}
+
+.upload-area {
+  margin-bottom: 1rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 500;
+}
+
+.file-label:hover:not(.uploading) {
+  background: #0056b3;
+}
+
+.file-label.uploading {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  margin-right: 0.5rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.upload-hint {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.mods-section h3 {
+  margin-bottom: 1rem;
+  color: #495057;
+}
+
+.mods-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.refresh-btn {
+  padding: 0.5rem 1rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+}
+
+.empty-state p:first-child {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.mods-list {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mod-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  background: white;
+  transition: background-color 0.3s ease;
+}
+
+.mod-item:last-child {
+  border-bottom: none;
+}
+
+.mod-item:hover {
+  background: #f8f9fa;
+}
+
+.mod-info {
+  flex: 1;
+}
+
+.mod-name {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  word-break: break-all;
+}
+
+.mod-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.mod-size {
+  font-weight: 500;
+}
+
+.mod-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.delete-btn {
+  padding: 0.5rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem 1rem;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-text {
+  color: #6c757d;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+}
+
+@media (max-width: 768px) {
+  .mod-manager-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .mod-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .mod-actions {
+    align-self: flex-end;
+  }
+  
+  .mod-details {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .mods-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .info-text {
+    text-align: center;
+  }
+}
